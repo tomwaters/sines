@@ -48,6 +48,7 @@ local toggle = false
 local scale_toggle = false
 
 engine.name = "Sines"
+--hs = include('lib/halfsecond')
 MusicUtil = require "musicutil"
 
 function init()
@@ -59,6 +60,7 @@ function init()
 		cents[i] = params:get("cents" .. i)
 		sliders[i] = (params:get("vol" .. i))*32
 	end
+--	hs.init()
 end
 
 function add_params()
@@ -74,7 +76,7 @@ function add_params()
 	action = function() set_notes() end}
 	--set voice params
 	for i = 1,16 do
-		params:add_group("voice " .. i .. " params", 11)
+		params:add_group("voice " .. i .. " params", 12)
 		--set voice vols
 		params:add_control("vol" .. i, "vol " .. i, controlspec.new(0.0, 1.0, 'lin', 0.01, 0.0))
 		params:set_action("vol" .. i, function(x) set_vol(i - 1, x) end)
@@ -90,7 +92,8 @@ function add_params()
 		params:add_control("decay" .. i, "env decay " .. i, controlspec.new(0.01, 15.0, 'lin', 0.01, 1.0,'s'))
 		params:set_action("decay" .. i, function(x) set_amp_rel(i - 1, x) end)
 		params:add_control("nil" .. i, "env nil " .. i, controlspec.new(0.01, 15.0, 'lin', 0.01, 1.0,'s'))
-		params:set_action("nil" .. i, function(x) set_amp_nil(i - 1, x) end)		
+		params:set_action("nil" .. i, function(x) set_amp_nil(i - 1, x) end)
+		
 		params:add_control("env_bias" .. i, "env bias " .. i, controlspec.new(0.0, 1.0, 'lin', 0.1, 1.0))
 		params:set_action("env_bias" .. i, function(x) set_env_bias(i - 1, x) end)
 		params:add_control("bit_depth" .. i, "bit depth " .. i, controlspec.new(1, 24, 'lin', 1, 24, 'bits'))
@@ -142,7 +145,10 @@ end
 
 function set_vol(synth_num, value)
 	engine.vol(synth_num, value)
+	sliders[synth_num+1] = 32 * value
 	edit = synth_num
+	
+	redraw()	
 end
 
 function tune(synth_num, value)
@@ -308,12 +314,8 @@ function enc(n, delta)
 
 	elseif n == 3 then
 		if key_1_pressed == 0 and key_3_pressed == 0 and key_2_pressed == 0 then
-			--set the slider value
-			sliders[edit+1] = sliders[edit+1] + delta
-			amp_value = util.clamp(((sliders[edit+1] + delta) * .026), 0.0, 1.0)
+			amp_value = util.clamp((sliders[edit+1] + delta) * (1/32), 0.0, 1.0)
 			params:set("vol" .. edit+1, amp_value)
-			if sliders[edit+1] > 32 then sliders[edit+1] = 32 end
-			if sliders[edit+1] < 0 then sliders[edit+1] = 0 end
 
 		elseif key_1_pressed == 0 and key_2_pressed == 1 and key_3_pressed == 0 then
 			--set the cents value to increment by
